@@ -164,7 +164,7 @@ def sumSeriesWithWildcards(requestContext, seriesList, *position): #XXX
   ``target=sumSeries(host.*.cpu-user.value)&target=sumSeries(host.*.cpu-system.value)``
 
   """
-  if type(position) is int:
+  if type(position) in [int, str]:
     positions = [position]
   else:
     positions = position
@@ -197,7 +197,7 @@ def averageSeriesWithWildcards(requestContext, seriesList, *position): #XXX
   ``target=averageSeries(host.*.cpu-user.value)&target=averageSeries(host.*.cpu-system.value)``
 
   """
-  if type(position) is int:
+  if type(position) in [int, str]:
     positions = [position]
   else:
     positions = position
@@ -891,10 +891,14 @@ def aliasByNode(requestContext, seriesList, *nodes):
 
 def selectNodes(name, *nodes):
   name_nodes = splitByNode(name)
-  return '.'.join(name_nodes[n] for n in nodes)
+  return '.'.join(name_nodes[nodeArithmetic(n)] for n in nodes)
 
 def splitByNode(name):
   return re.search('(?:.*\()?(?P<name>[-\w*\.:]+)(?:,|\)?.*)?', name).groups()[0].split('.')
+
+def nodeArithmetic(exp):
+  'Ints with addition and negation (no subtraction)'
+  return sum(map(int, str(exp).split('+')))
 
 def aliasByMetric(requestContext, seriesList):
   """
