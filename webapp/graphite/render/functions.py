@@ -173,7 +173,7 @@ def sumSeriesWithWildcards(requestContext, seriesList, *position): #XXX
   newNames = list()
 
   for series in seriesList:
-    newname = '.'.join(map(lambda x: x[1], filter(lambda i: i[0] not in positions, enumerate(series.name.split('.')))))
+    newname = '.'.join(map(lambda x: x[1], filter(lambda i: i[0] not in positions, enumerate(splitByNode(series.name)))))
     if newname in newSeries.keys():
       newSeries[newname] = sumSeries(requestContext, (series, newSeries[newname]))[0]
     else:
@@ -204,7 +204,7 @@ def averageSeriesWithWildcards(requestContext, seriesList, *position): #XXX
   result = []
   matchedList = {}
   for series in seriesList:
-    newname = '.'.join(map(lambda x: x[1], filter(lambda i: i[0] not in positions, enumerate(series.name.split('.')))))
+    newname = '.'.join(map(lambda x: x[1], filter(lambda i: i[0] not in positions, enumerate(splitByNode(series.name)))))
     if not matchedList.has_key(newname):
       matchedList[newname] = []
     matchedList[newname].append(series)
@@ -886,9 +886,15 @@ def aliasByNode(requestContext, seriesList, *nodes):
   if type(nodes) is int:
     nodes=[nodes]
   for series in seriesList:
-    metric_pieces = re.search('(?:.*\()?(?P<name>[-\w*\.:]+)(?:,|\)?.*)?',series.name).groups()[0].split('.')
-    series.name = '.'.join(metric_pieces[n] for n in nodes)
+    series.name = selectNodes(series.name, *nodes)
   return seriesList
+
+def selectNodes(name, *nodes):
+  name_nodes = splitByNode(name)
+  return '.'.join(name_nodes[n] for n in nodes)
+
+def splitByNode(name):
+  return re.search('(?:.*\()?(?P<name>[-\w*\.:]+)(?:,|\)?.*)?', name).groups()[0].split('.')
 
 def aliasByMetric(requestContext, seriesList):
   """
@@ -2004,8 +2010,7 @@ def groupByNodes(requestContext, seriesList, callback, *nodes):
   metaSeries = {}
   keys = []
   for series in seriesList:
-    series_name_nodes = series.name.split(".")
-    key = '.'.join(series_name_nodes[n] for n in nodes)
+    key = selectNodes(series.name, *nodes)
     if key not in metaSeries.keys():
       metaSeries[key] = [series]
       keys.append(key)
